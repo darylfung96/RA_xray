@@ -135,5 +135,5 @@ def create_negative_images(img_dir, save_dir, img_coords, iter=100):
 train_img_location = os.path.join('joint_detection', 'boneage-training-dataset')
 
 img_coords = parse_xml_annotations('train')
-create_negative_images('train_img', 'negative_images', img_coords)
+create_negative_images(train_img_location, 'negative_images', img_coords)
 create_haar_cascade_info_dat(img_coords, positive_samples_dir=train_img_location, negative_samples_dir='negative_images')
