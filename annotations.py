@@ -65,7 +65,7 @@ def create_negative_images(img_dir, save_dir, img_coords, iter=100):
     num_img = 0
     os.makedirs(save_dir, exist_ok=True)
 
-    for img_name, coords in [list(img_coords.items())[0]]:
+    for img_name, coords in img_coords.items():
 
         img = cv2.imread(os.path.join(img_dir, img_name))
         img_height, img_width, img_channel = img.shape
