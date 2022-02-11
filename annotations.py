@@ -1,7 +1,6 @@
 import cv2
 import os
 import random
-import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 
 
@@ -31,12 +30,12 @@ def parse_xml_annotations(folder_dir):
     return img_coords
 
 
-def create_haar_cascade_info_dat(img_coords, negative_samples_dir):
+def create_haar_cascade_info_dat(img_coords, positive_samples_dir, negative_samples_dir):
 
     # for positive samples
     with open('info.dat', 'w') as f:
         for img_name, coords in img_coords.items():
-            text = f'{img_name} {len(coords)} '
+            text = f'{os.path.join(positive_samples_dir, img_name)} {len(coords)} '
             for coord in coords:
                 start_x = coord[0][0]
                 start_y = coord[0][1]
@@ -133,6 +132,8 @@ def create_negative_images(img_dir, save_dir, img_coords, iter=100):
             num_img += 1
 
 
+train_img_location = os.path.join('joint_detection', 'boneage-training-dataset')
+
 img_coords = parse_xml_annotations('train')
 create_negative_images('train_img', 'negative_images', img_coords)
-create_haar_cascade_info_dat(img_coords, negative_samples_dir='negative_images')
+create_haar_cascade_info_dat(img_coords, positive_samples_dir=train_img_location, negative_samples_dir='negative_images')
