@@ -1,0 +1,10 @@
+all_images/
+negative_images/
+plots/
+RA_Xray/
+train_img/
+info.dat
+bg.txt
+.DS_Store
+.idea/
+__pycache__/
