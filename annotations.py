@@ -8,6 +8,7 @@ def parse_xml_annotations(folder_dir):
     files = sorted(os.listdir(folder_dir))
 
     img_coords = {}
+    ignore_type = {'Wrist': True, 'Radius': True, 'Ulna': True}
 
     for file in files:
         filename = os.path.join(folder_dir, file)
@@ -18,6 +19,11 @@ def parse_xml_annotations(folder_dir):
         img_name = et.find('filename').text
         all_object_coords = et.findall('object')
         for coord in all_object_coords:
+
+            # skip ignore ones
+            if ignore_type.get(coord.find('name').text, None) is not None:
+                continue
+
             xmin = int(coord.find('bndbox').find('xmin').text)
             xmax = int(coord.find('bndbox').find('xmax').text)
             ymin = int(coord.find('bndbox').find('ymin').text)
