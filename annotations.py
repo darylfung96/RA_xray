@@ -36,6 +36,50 @@ def parse_xml_annotations(folder_dir):
     return img_coords
 
 
+def parse_xml_annotations_for_yolo(folder_dir):
+    files = sorted(os.listdir(folder_dir))
+
+    img_coords = {}
+    ignore_type = {'Wrist': True, 'Radius': True, 'Ulna': True}
+
+    for file in files:
+        filename = os.path.join(folder_dir, file)
+        et = ET.parse(filename)
+
+        all_coords = []
+
+        img_name = et.find('filename').text
+        img_width = int(et.find('size').find('width').text)
+        img_height = int(et.find('size').find('height').text)
+
+        all_object_coords = et.findall('object')
+        for coord in all_object_coords:
+
+            # skip ignore ones
+            if ignore_type.get(coord.find('name').text, None) is not None:
+                continue
+
+            xmin = int(coord.find('bndbox').find('xmin').text)
+            xmax = int(coord.find('bndbox').find('xmax').text)
+            ymin = int(coord.find('bndbox').find('ymin').text)
+            ymax = int(coord.find('bndbox').find('ymax').text)
+
+            width = xmax-xmin
+            height = ymax-ymin
+            xcenter = xmin + width/2
+            ycenter = ymin + height/2
+
+            xcenter_norm = xcenter / img_width
+            ycenter_norm = ycenter / img_height
+            width_norm = width / img_width
+            height_norm = height / img_height
+            all_coords.append([xcenter_norm, ycenter_norm, width_norm, height_norm])
+
+        img_coords[img_name] = all_coords
+
+    return img_coords
+
+
 def create_haar_cascade_info_dat(img_coords, positive_samples_dir, negative_samples_dir):
 
     # for positive samples
@@ -58,6 +102,21 @@ def create_haar_cascade_info_dat(img_coords, positive_samples_dir, negative_samp
         for negative_sample in negative_samples:
             f.write(os.path.join(negative_samples_dir, negative_sample))
             f.write('\n')
+
+
+def create_labels_for_yolo(img_coords, folder_to_save_dir):
+
+    os.makedirs(folder_to_save_dir, exist_ok=True)
+
+    # for positive samples
+    for img_name, coords in img_coords.items():
+        with open(os.path.join(folder_to_save_dir, f'{img_name.split(".")[0]}.txt'), 'w') as f:
+            for coord in coords:
+                text = f'0 '
+                # coord = [xcenter, ycenter, width, height]
+                text += f'{coord[0]} {coord[1]} {coord[2]} {coord[3]}'
+                f.write(text)
+                f.write('\n')
 
 
 def create_negative_images(img_dir, save_dir, img_coords, iter=100):
@@ -140,6 +199,9 @@ def create_negative_images(img_dir, save_dir, img_coords, iter=100):
 
 train_img_location = os.path.join('joint_detection', 'boneage-training-dataset')
 
-img_coords = parse_xml_annotations('train')
-create_negative_images(train_img_location, 'negative_images', img_coords)
-create_haar_cascade_info_dat(img_coords, positive_samples_dir=train_img_location, negative_samples_dir='negative_images')
+# img_coords = parse_xml_annotations('train')
+# create_negative_images(train_img_location, 'negative_images', img_coords)
+# create_haar_cascade_info_dat(img_coords, positive_samples_dir=train_img_location, negative_samples_dir='negative_images')
+
+img_coords = parse_xml_annotations_for_yolo('eval')
+create_labels_for_yolo(img_coords, 'labels/eval')

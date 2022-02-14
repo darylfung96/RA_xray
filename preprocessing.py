@@ -143,22 +143,23 @@ def plot_images(patient_leftright_images):
     :return:
     """
     for patient in patient_leftright_images:
-        # look at all the left/right image (images is either all left images, or all right images)
+        # get all dates
+        left_dates = [ra_file.split("_")[2] for ra_file in patient[0]]  # left
+        right_dates = [ra_file.split("_")[2] for ra_file in patient[1]]  # right
+        all_dates = np.unique(left_dates + right_dates).tolist()
 
+        # look at all the left/right image (images is either all left images, or all right images)
         # patient name
         patient_name = '_'.join(patient[0][0].split("_")[:2])
 
-        # get max columns
-        max_len = 0
-        for i in patient:
-            if max_len < len(i):
-                max_len = len(i)
-
-        fig, ax = plt.subplots(nrows=2, ncols=max_len)
+        fig, ax = plt.subplots(nrows=2, ncols=len(all_dates))
 
         for idx, images in enumerate(patient):
             for image_idx, image in enumerate(images):
-                ax[idx][image_idx].imshow(load_image(image, (400, 600)))
+                date = image.split("_")[2]
+                col_index = all_dates.index(date)
+                ax[idx][col_index].set_title(date)
+                ax[idx][col_index].imshow(load_image(image, (400, 600)))
         fig.suptitle(patient_name)
         plt.show()
 
@@ -236,4 +237,4 @@ def plot_patient_hands():
     plot_images(patient_hand)
 
 
-plot_patient_feet()
+plot_patient_hands()
