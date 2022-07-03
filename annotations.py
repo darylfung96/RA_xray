@@ -36,7 +36,9 @@ def parse_xml_annotations(folder_dir):
     return img_coords
 
 
-def parse_xml_annotations_for_yolo(folder_dir):
+def parse_xml_annotations_for_yolo(folder_dir, selection_type):
+    assert selection_type in ['wrist_only', 'finger_joints_only', 'all']
+
     files = sorted(os.listdir(folder_dir))
 
     img_coords = {}
@@ -56,8 +58,13 @@ def parse_xml_annotations_for_yolo(folder_dir):
         for coord in all_object_coords:
 
             # skip ignore ones
-            if ignore_type.get(coord.find('name').text, None) is not None:
-                continue
+            if selection_type == 'finger_joints_only':
+                if ignore_type.get(coord.find('name').text, None) is not None:
+                    continue
+            elif selection_type == 'wrist_only':
+                # select only ignore ones
+                if ignore_type.get(coord.find('name').text, None) is None:
+                    continue
 
             xmin = int(coord.find('bndbox').find('xmin').text)
             xmax = int(coord.find('bndbox').find('xmax').text)
@@ -203,5 +210,6 @@ train_img_location = os.path.join('joint_detection', 'boneage-training-dataset')
 # create_negative_images(train_img_location, 'negative_images', img_coords)
 # create_haar_cascade_info_dat(img_coords, positive_samples_dir=train_img_location, negative_samples_dir='negative_images')
 
-img_coords = parse_xml_annotations_for_yolo('eval')
-create_labels_for_yolo(img_coords, 'labels/eval')
+dataset_type = 'eval'  # 'train' or 'eval'
+img_coords = parse_xml_annotations_for_yolo(dataset_type, 'finger_joints_only')
+create_labels_for_yolo(img_coords, f'labels/{dataset_type}')

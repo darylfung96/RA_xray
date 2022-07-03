@@ -1,5 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
+import glob
 import numpy as np
 import os
 import re
@@ -26,6 +27,17 @@ def sorting_function(ra_file):
         new_ra_file = new_ra_file.replace(old, '%02d_' % new)
 
     return new_ra_file
+
+
+def sorting_function_two(file):
+    file_name = '_'.join(file.rsplit('/', 1))
+    file_name = os.path.basename(file_name)
+    return sorting_function(file_name)
+
+
+def get_right_format_two():
+    """"""
+
 
 
 def get_only_feet(ra_files):
@@ -112,8 +124,8 @@ def split_by_leftright(patients):
     return patients_leftright
 
 
-def load_image(image_name, resize_shape=None, grayscale=False):
-    image_filename = os.path.join('all_images', 'focused_processed_xray_images', image_name)
+def load_image(image_name, dirname="", resize_shape=None, grayscale=False):
+    image_filename = os.path.join(dirname, image_name)
 
     if grayscale:
         flags = 0
@@ -159,7 +171,36 @@ def plot_images(patient_leftright_images):
                 date = image.split("_")[2]
                 col_index = all_dates.index(date)
                 ax[idx][col_index].set_title(date)
-                ax[idx][col_index].imshow(load_image(image, (400, 600)))
+                dirname = os.path.join('all_images', 'focused_processed_xray_images')
+                ax[idx][col_index].imshow(load_image(image, dirname, (400, 600)))
+        fig.suptitle(patient_name)
+        plt.show()
+
+
+def plot_unprocessed_images(patients_images, resize_shape=(128, 128), grayscale=False):
+    """
+
+    :param patients_images:  [
+                                [patient1_image1, patient1_image2, ...],
+                                [patient2_image1, patient2_image2, ...].
+                                ...
+                            ]
+    :param resize_shape:   The shape to resize the images to
+    :param grayscale:       Load as grayscale (True or False)
+    :return:
+    """
+
+    for patient_images in patients_images:
+        dates = [img.split("/")[3].split("_")[-1] for img in patient_images]
+        fig, ax = plt.subplots(nrows=1, ncols=len(dates))
+
+        for image_idx, image in enumerate(patient_images):
+            date = image.split("_")[-1].split("/")[0]
+            col_index = dates.index(date)
+            ax[col_index].set_title(date)
+            ax[col_index].imshow(load_image(image, resize_shape=(400, 600)))
+
+        patient_name = patient_images[0].split("/")[2]
         fig.suptitle(patient_name)
         plt.show()
 
@@ -190,6 +231,7 @@ def load_images(patient_leftright_images, resize_shape=(128, 128), grayscale=Fal
         for images in patient:
             current_direction = []
             for image in images:
+                dirname = os.path.join('all_images', 'focused_processed_xray_images')
                 current_direction.append(load_image(image, resize_shape, grayscale))
             all_images.append(np.array(current_direction))
         all_patients.append(np.array(all_images))
@@ -237,4 +279,15 @@ def plot_patient_hands():
     plot_images(patient_hand)
 
 
-plot_patient_hands()
+def plot_unprocessed_hands():
+    # new files
+    files = glob.glob('RA_Xray/2/**/*.jpeg', recursive=True)
+    files = [file for file in files if 'hand' in file]
+    files = sorted(files, key=sorting_function_two)
+    patient_hand = split_by_patients(files)
+    plot_unprocessed_images(patient_hand)
+
+
+plot_unprocessed_hands()
+
+
