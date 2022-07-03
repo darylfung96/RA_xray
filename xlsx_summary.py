@@ -4,32 +4,23 @@ import os
 import glob
 
 processed_xlsx_folder = 'processed_xlsx_RA_files'
-xlsx_folder = 'xlsx_RA_files/RA_Jun2'
-os.makedirs(processed_xlsx_folder, exist_ok=True)
 
-for xlsx_file in glob.glob(f'{xlsx_folder}/**/*.xlsx'):
+patients_info = []
+total_patients = 0
+for xlsx_file in glob.glob(f'{processed_xlsx_folder}/*.xlsx'):
 	df = pd.read_excel(xlsx_file)
 
-	patient_ids = np.unique(np.array(df['Patient ID']))
-	timepoints = np.unique(np.array(df['Timepoint']))
+	num_patients = df.shape[0]
+	total_patients += num_patients
 
-	# intiialize columns
-	column_dict = {'Patient ID': None}
-	for col in df.columns[2:]:
-		for timepoint in timepoints:
-			column_dict[f'{col}__{timepoint}'] = 'Missing'
+	num_timepoints = len([col for col in df.columns if df.columns[2][:-3] in col])
 
-	all_patients = []
-	for patient_id in patient_ids:
-		patient_df = df.loc[df['Patient ID'] == patient_id]
-		patient_dict = column_dict.copy()
+	for patient_id in df['Patient ID']:
+		current_patient_info = {}
+		current_patient_info['Patient ID'] = patient_id
+		current_patient_info['num_timepoints'] = num_timepoints
+		patients_info.append(current_patient_info)
 
-		patient_dict['Patient ID'] = patient_id
-		for timepoint in np.unique(patient_df['Timepoint']):
-			current_patient_timepoint_df = patient_df.loc[patient_df['Timepoint'] == timepoint]
-			for col in df.columns[2:]:
-				patient_dict[f'{col}__{timepoint}'] = current_patient_timepoint_df[col].item()
+pd.DataFrame(patients_info).to_excel('patient_info.xlsx')
 
-		all_patients.append(patient_dict)
 
-	pd.DataFrame(all_patients, columns=column_dict.keys()).to_excel(f'{processed_xlsx_folder}/{os.path.split(xlsx_file)[-1]}')
