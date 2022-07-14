@@ -219,3 +219,4 @@ for folder in os.listdir('./RA_Jun2/'):
 # num left foot
 # num right foot
 # num timepoints
+
