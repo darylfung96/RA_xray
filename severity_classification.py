@@ -1,12 +1,18 @@
-import pytorch_lightning as pl
-from collections import OrderedDict
 import pandas as pd
-import cv2
+from PIL import Image
 import os
+import numpy as np
+import tqdm
+import torch
+import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+import torchvision
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+import wandb
 
 
-class RADataset(Dataset):
+class ObtainRADataset:
 	def __init__(self, tif_folder, xlsx_filename):
 		total_scores_column = ['TOTAL SCORES LF E  ',
 		                       'TOTAL SCORES LF J  ',
@@ -26,8 +32,11 @@ class RADataset(Dataset):
 		self.patient_total_scores = self.patient_total_scores[~self.patient_filename.isnull().all(1)]
 		self.patient_filename = self.patient_filename[~self.patient_filename.isnull().all(1)]
 
-		self.images = []
-		self.labels = []
+		self.train_images = []
+		self.test_images = []
+		self.train_labels = []
+		self.test_labels = []
+		self.train_label_scale = MinMaxScaler()
 		self.__initialize_images_labels()
 
 	def __initialize_images_labels(self):
@@ -95,18 +104,113 @@ class RADataset(Dataset):
 						labels.append(errosion_f)
 
 		self.images = images
+		self.labels = np.expand_dims(labels, -1)
+
+		self.train_images, self.test_images, self.train_labels, self.test_labels = train_test_split(self.images,
+		                                                                                            self.labels,
+		                                                                                            test_size=0.2)
+		self.train_labels = self.train_label_scale.fit_transform(self.train_labels)
+		self.test_labels = self.train_label_scale.transform(self.test_labels)
+
+class RADataset(Dataset):
+	def __init__(self, images, labels):
+		super(RADataset, self).__init__()
+		self.images = images
 		self.labels = labels
 
 	def __len__(self):
-		return len(self.patient_filename)
+		return len(self.images)
 
 	def __getitem__(self, idx):
-		image = cv2.imread(self.images[idx])
-		image = cv2.resize(image, (512, 512))
+		image = Image.open(self.images[idx]).convert("RGB")
+		preprocess = torchvision.transforms.Compose([
+			torchvision.transforms.Resize((256, 256)),
+			torchvision.transforms.ToTensor(),
+			torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+		])
+		image = preprocess(image)
+
 		label = self.labels[idx]
 		return image, label
 
 
-data_loader = DataLoader(RADataset('all_RA_Jun2', 'all_CATCH_with_filename.xlsx'), batch_size=6)
-for images, labels in data_loader:
-	print(labels)
+class Net(nn.Module):
+	def __init__(self):
+		super(Net, self).__init__()
+		self.model = torchvision.models.resnet18(pretrained=True)
+		self.fcn = nn.Sequential(
+			nn.Linear(1000, 512),
+			nn.ReLU(),
+			nn.Linear(512, 512),
+			nn.ReLU(),
+			nn.Linear(512, 1)
+		)
+
+	def forward(self, inputs):
+		return self.fcn(self.model(inputs))
+
+device = 'cuda'
+wandb.init(project='RA severity classification', name='resnet')
+obtain_ra_dataset = ObtainRADataset('all_RA_Jun2', 'all_CATCH_with_filename.xlsx')
+
+train_ra_dataset = RADataset(obtain_ra_dataset.train_images, obtain_ra_dataset.train_labels)
+train_data_loader = DataLoader(train_ra_dataset, batch_size=32, shuffle=True)
+
+test_ra_dataset = RADataset(obtain_ra_dataset.test_images, obtain_ra_dataset.test_labels)
+test_data_loader = DataLoader(test_ra_dataset, batch_size=32, shuffle=False)
+
+
+network = Net().to(device)
+wandb.watch(network, log='all')
+criterion = nn.BCELoss()
+optimizer = torch.optim.Adam(network.parameters(), lr=0.001)
+
+for current_epoch in range(200):
+	data_tqdm = tqdm.tqdm(train_data_loader)
+	for images, labels in data_tqdm:
+		images = images.to(device).float()
+		labels = labels.to(device).float()
+
+		outputs = torch.sigmoid(network(images))
+
+		optimizer.zero_grad()
+		loss = criterion(outputs, labels)
+		loss.backward()
+		optimizer.step()
+		wandb.log({
+			'train_loss': loss.item()
+		})
+		wandb_images = wandb.Image(images)
+		wandb.log({
+			'images': wandb_images
+		})
+
+	test_data_tqdm = tqdm.tqdm(test_data_loader)
+	for test_images, test_labels in test_data_tqdm:
+		test_images = test_images.to(device).float()
+		test_labels = test_labels.to(device).float()
+
+		outputs = torch.sigmoid(network(test_images))
+		test_loss = criterion(outputs, test_labels)
+
+		wandb.log({
+			'test_loss': test_loss.item()
+		})
+		wandb_images = wandb.Image(test_images)
+		wandb.log({
+			'images': wandb_images
+		})
+		data_tqdm.set_description(f"current epoch: {current_epoch} test loss: {test_loss}")
+
+
+	table = wandb.Table(columns=['Image', 'Predicted Severity Score Errosion (normalized)',
+	                             'Predicted Severity Score Errosion',
+	                             'Ground Truth Score Errosion (normalized)', 'Ground Truth Score Errosion'])
+	scaled_labels = obtain_ra_dataset.train_label_scale.inverse_transform(test_labels.cpu().detach().numpy())
+	scaled_outputs = obtain_ra_dataset.train_label_scale.inverse_transform(outputs.cpu().detach().numpy())
+
+	for img, output, scaled_output, scaled_label, label in zip(test_images, outputs, scaled_outputs, scaled_labels, labels):
+		wandb_img = wandb.Image(img)
+		table.add_data(wandb_img, output[0], scaled_output[0], label[0], scaled_label[0])
+
+	wandb.log({f"Test Data Table {current_epoch}": table})
