@@ -42,7 +42,22 @@ def parse_xml_annotations_for_yolo(folder_dir, selection_type):
     files = sorted(os.listdir(folder_dir))
 
     img_coords = {}
-    ignore_type = {'Wrist': True, 'Radius': True, 'Ulna': True}
+    ignore_type = {'Wrist': True, 'Radius': True, 'Ulna': True, 'DIP': True}
+    label_number_dict = {}
+
+    if selection_type == 'finger_joints_only':
+        label_number_dict['PIP'] = 0
+        label_number_dict['MCP'] = 1
+    elif selection_type == 'wrist_only':
+        label_number_dict['Wrist'] = 0
+        label_number_dict['Radius'] = 1
+        label_number_dict['Ulna'] = 2
+    else:
+        label_number_dict['PIP'] = 0
+        label_number_dict['MCP'] = 1
+        label_number_dict['Wrist'] = 2
+        label_number_dict['Radius'] = 3
+        label_number_dict['Ulna'] = 4
 
     for file in files:
         filename = os.path.join(folder_dir, file)
@@ -56,14 +71,14 @@ def parse_xml_annotations_for_yolo(folder_dir, selection_type):
 
         all_object_coords = et.findall('object')
         for coord in all_object_coords:
-
+            name = coord.find('name').text
             # skip ignore ones
             if selection_type == 'finger_joints_only':
-                if ignore_type.get(coord.find('name').text, None) is not None:
+                if ignore_type.get(name, None) is not None:
                     continue
             elif selection_type == 'wrist_only':
                 # select only ignore ones
-                if ignore_type.get(coord.find('name').text, None) is None:
+                if ignore_type.get(name, None) is None:
                     continue
 
             xmin = int(coord.find('bndbox').find('xmin').text)
@@ -80,7 +95,7 @@ def parse_xml_annotations_for_yolo(folder_dir, selection_type):
             ycenter_norm = ycenter / img_height
             width_norm = width / img_width
             height_norm = height / img_height
-            all_coords.append([xcenter_norm, ycenter_norm, width_norm, height_norm])
+            all_coords.append([label_number_dict[name], xcenter_norm, ycenter_norm, width_norm, height_norm])
 
         img_coords[img_name] = all_coords
 
@@ -119,9 +134,8 @@ def create_labels_for_yolo(img_coords, folder_to_save_dir):
     for img_name, coords in img_coords.items():
         with open(os.path.join(folder_to_save_dir, f'{img_name.split(".")[0]}.txt'), 'w') as f:
             for coord in coords:
-                text = f'0 '
                 # coord = [xcenter, ycenter, width, height]
-                text += f'{coord[0]} {coord[1]} {coord[2]} {coord[3]}'
+                text = f'{coord[0]} {coord[1]} {coord[2]} {coord[3]} {coord[4]}'
                 f.write(text)
                 f.write('\n')
 
