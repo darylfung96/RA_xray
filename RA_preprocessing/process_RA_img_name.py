@@ -40,12 +40,6 @@ def convert_image_date_to_timepoint(current_patient_id, image_names, dates, time
 			new_image_name = '_'.join(list_image_name)
 			new_image_names.append(new_image_name)
 
-			if new_image_name == 'A_FootLeft.tif':
-				print(current_patient_id)
-				print(image_name)
-				print(list_image_name)
-				print(dates_dict[current_date])
-
 	# deal with same length in excel and number of images timepoints
 	else:
 		dates_dict = {date: idx for idx, date in enumerate(dates)}
@@ -60,11 +54,6 @@ def convert_image_date_to_timepoint(current_patient_id, image_names, dates, time
 			list_image_name[-2] = timepoint
 			new_image_name = '_'.join(list_image_name)
 			new_image_names.append(new_image_name)
-
-			if new_image_name == 'A_FootLeft.tif':
-				print(current_patient_id)
-				print(image_name)
-				print(list_image_name)
 
 	return new_image_names
 
