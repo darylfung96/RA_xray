@@ -9,3 +9,11 @@ bg.txt
 .idea/
 __pycache__/
 yolov3/
+*.pt
+*.xlsx
+**/labels/**/*.txt
+**/*.pt
+**/*.tif
+**/*.png
+**/*.jpg
+**/*.xlsx

@@ -1,0 +1,8 @@
+path: ../datasets/joint  # dataset root dir
+train: train.txt  # train images (relative to 'path') 118287 images
+val: eval.txt  # train images (relative to 'path') 5000 images
+#test: test-dev2017.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
+
+# Classes
+nc: 1  # number of classes
+names: ['joint']
