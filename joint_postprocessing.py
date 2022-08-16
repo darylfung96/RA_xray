@@ -11,7 +11,7 @@ from yolov5.utils.plots import Annotator, colors, save_one_box
 
 
 directory = os.path.join('yolov5', 'runs', 'detect', 'yolov5l6_joint_tif', 'labels')
-labels = glob(f'{directory}/*.txt')
+labels = sorted(glob(f'{directory}/*.txt'))
 
 
 def cmp_y(item1, item2):
@@ -138,14 +138,25 @@ if __name__ == '__main__':
 			content = file.read()
 		preds = content.split("\n")[:-1]
 		preds = [pred.split() for pred in preds]
-		preds = arrange_prediction(preds)
 
+		if 'hands' in label:
+			preds = preds[:28]
+		elif 'hand' in label and 'left' in label:
+			preds = preds[:14]
+		elif 'hand' in label and 'right' in label:
+			preds = preds[:14]
+
+		preds = arrange_prediction(preds)
 		if 'hands' in label:
 			preds = label_hands(preds)
 		elif 'hand' in label and 'left' in label:
 			preds = [label_hand(preds)]
 		elif 'hand' in label and 'right' in label:
 			preds = [label_hand(preds, True)]
+
+		# :2 because only get left and right hand (sometimes when more bounding boxes detected it would create issues)
+		# so this one might need fixing
+		preds = preds[:2]  #TODO: might need to fix this
 
 		img = cv2.imread(label.replace('labels/', '').replace('.txt', '.tif'))
 
