@@ -15,15 +15,19 @@ for idx, row in df.iterrows():
 	right_foot_filename = [selected_tif_file for selected_tif_file in selected_tif_files
 	                      if 'feet' in selected_tif_file.lower() or (
 				                      'foot' in selected_tif_file.lower() and 'right' in selected_tif_file.lower())]
+	feet_filename = [selected_tif_file for selected_tif_file in selected_tif_files if 'feet' in selected_tif_file.lower()]
 	left_hand_filename = [selected_tif_file for selected_tif_file in selected_tif_files if
 				                      'hand' in selected_tif_file.lower() and 'left' in selected_tif_file.lower()]
 	right_hand_filename = [selected_tif_file for selected_tif_file in selected_tif_files if
 				                      'hand' in selected_tif_file.lower() and 'right' in selected_tif_file.lower()]
+	hands_filename = [selected_tif_file for selected_tif_file in selected_tif_files if 'hands' in selected_tif_file.lower()]
 
 	df.loc[idx, 'filename_LH'] = left_hand_filename[0] if len(left_hand_filename) else ''
 	df.loc[idx, 'filename_RH'] = right_hand_filename[0] if len(right_hand_filename) else ''
+	df.loc[idx, 'filename_H'] = hands_filename[0] if len(hands_filename) else ''
 	df.loc[idx, 'filename_LF'] = left_foot_filename[0] if len(left_foot_filename) else ''
 	df.loc[idx, 'filename_RF'] = right_foot_filename[0] if len(right_foot_filename) else ''
+	df.loc[idx, 'filename_F'] = feet_filename[0] if len(hands_filename) else ''
 
 df.to_excel('all_CATCH_with_filename.xlsx')
 

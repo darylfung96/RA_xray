@@ -36,28 +36,34 @@ def parse_xml_annotations(folder_dir):
     return img_coords
 
 
-def parse_xml_annotations_for_yolo(folder_dir, selection_type):
+def parse_xml_annotations_for_yolo(folder_dir, selection_type, is_single_class=False):
     assert selection_type in ['wrist_only', 'finger_joints_only', 'all']
 
     files = sorted(os.listdir(folder_dir))
 
     img_coords = {}
-    ignore_type = {'Wrist': True, 'Radius': True, 'Ulna': True, 'DIP': True}
-    label_number_dict = {}
+    finger_joints_only_dict = {'PIP': 0, 'MCP': 0}
+    wrist_only_dict = {'Wrist': 0, 'Radius': 0, 'Ulna': 0}
+    all_dict = {'Wrist': 0, 'Radius': 0, 'Ulna': 0, 'PIP': 0, 'MCP': 0}
 
-    if selection_type == 'finger_joints_only':
-        label_number_dict['PIP'] = 0
-        label_number_dict['MCP'] = 1
-    elif selection_type == 'wrist_only':
-        label_number_dict['Wrist'] = 0
-        label_number_dict['Radius'] = 1
-        label_number_dict['Ulna'] = 2
-    else:
-        label_number_dict['PIP'] = 0
-        label_number_dict['MCP'] = 1
-        label_number_dict['Wrist'] = 2
-        label_number_dict['Radius'] = 3
-        label_number_dict['Ulna'] = 4
+    label_number_creator = {'wrist_only': wrist_only_dict,
+                            'finger_joints_only': finger_joints_only_dict, 'all': all_dict}
+
+    label_number_dict = label_number_creator[selection_type].copy()
+    if not is_single_class:
+        if selection_type == 'finger_joints_only':
+            label_number_dict['PIP'] = 0
+            label_number_dict['MCP'] = 1
+        elif selection_type == 'wrist_only':
+            label_number_dict['Wrist'] = 0
+            label_number_dict['Radius'] = 1
+            label_number_dict['Ulna'] = 2
+        else:
+            label_number_dict['PIP'] = 0
+            label_number_dict['MCP'] = 1
+            label_number_dict['Wrist'] = 2
+            label_number_dict['Radius'] = 3
+            label_number_dict['Ulna'] = 4
 
     for file in files:
         filename = os.path.join(folder_dir, file)
@@ -74,11 +80,14 @@ def parse_xml_annotations_for_yolo(folder_dir, selection_type):
             name = coord.find('name').text
             # skip ignore ones
             if selection_type == 'finger_joints_only':
-                if ignore_type.get(name, None) is not None:
+                if finger_joints_only_dict.get(name, None) is None:
                     continue
             elif selection_type == 'wrist_only':
                 # select only ignore ones
-                if ignore_type.get(name, None) is None:
+                if wrist_only_dict.get(name, None) is None:
+                    continue
+            else:
+                if all_dict.get(name, None) is None:
                     continue
 
             xmin = int(coord.find('bndbox').find('xmin').text)
@@ -225,5 +234,5 @@ train_img_location = os.path.join('joint_detection', 'boneage-training-dataset')
 # create_haar_cascade_info_dat(img_coords, positive_samples_dir=train_img_location, negative_samples_dir='negative_images')
 
 dataset_type = 'eval'  # 'train' or 'eval'
-img_coords = parse_xml_annotations_for_yolo(dataset_type, 'finger_joints_only')
+img_coords = parse_xml_annotations_for_yolo(dataset_type, 'wrist_only', is_single_class=False)
 create_labels_for_yolo(img_coords, f'labels/{dataset_type}')

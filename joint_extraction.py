@@ -44,7 +44,6 @@ for image in all_images:
 	#   [thumb PIP, thumb MCP],
 	# ]
 
-
 	image_array = cv2.imread(image)
 	x_ratio = image_array.shape[1]
 	y_ratio = image_array.shape[0]
