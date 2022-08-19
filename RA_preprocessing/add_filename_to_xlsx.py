@@ -27,7 +27,7 @@ for idx, row in df.iterrows():
 	df.loc[idx, 'filename_H'] = hands_filename[0] if len(hands_filename) else ''
 	df.loc[idx, 'filename_LF'] = left_foot_filename[0] if len(left_foot_filename) else ''
 	df.loc[idx, 'filename_RF'] = right_foot_filename[0] if len(right_foot_filename) else ''
-	df.loc[idx, 'filename_F'] = feet_filename[0] if len(hands_filename) else ''
+	df.loc[idx, 'filename_F'] = feet_filename[0] if len(feet_filename) else ''
 
 df.to_excel('all_CATCH_with_filename.xlsx')
 
