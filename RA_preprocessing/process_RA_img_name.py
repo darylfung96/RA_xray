@@ -90,7 +90,8 @@ for CATCH_folder in CATCH_folders:
 					shutil.copy(os.path.join('RA_Jun2', CATCH_folder, current_patient_id, image_names[i]),
 					            os.path.join(destination_folder, new_image_names[i]))
 
-
-		except FileNotFoundError:
+		except FileNotFoundError as e:
+			print('patient id: ', current_patient_id)
+			print(e)
 			continue
 
