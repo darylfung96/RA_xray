@@ -26,20 +26,26 @@ def cmp_x(item1, item2):
 	return x1 - x2
 
 
-def generate_cmp_y(y_index):
-	def cmp_y(item1, item2):
-		y1 = float(item1[y_index])
-		y2 = float(item2[y_index])
+def generate_cmp(index):
+	"""
+	Create the sorting function to compare based on the index provided in a list
+	Given list [0, 1, 1, 3, 5], [0, 2, 1, 3, 4], [1, 2, 3, 5, 0]
+
+	If index is 0, it will compare and sort the list on index 0 and return:
+	[0, 1, 1, 3, 4], [0, 2, 1, 3, 4], [1, 2, 3, 5, 0]
+
+	If index is 4, it will compare and sort the list on index 4 and return:
+	[1, 2, 3, 5, 0], [0, 2, 1, 3, 4], [0, 1, 1, 3, 5]
+
+	:param index:
+	:return:
+	"""
+	def cmp_value(item1, item2):
+		y1 = float(item1[index])
+		y2 = float(item2[index])
 		return y1 - y2
-	return cmp_y
+	return cmp_value
 
-
-def generate_cmp_x(x_index):
-	def cmp_x(item1, item2):
-		x1 = float(item1[x_index])
-		x2 = float(item2[x_index])
-		return x1 - x2
-	return cmp_x
 
 
 def divide_chunks(current_list, chunk_size):
@@ -52,7 +58,7 @@ def divide_hands(current_list):
 
 
 def divide_fingers(current_list, y_index=2):
-	current_cmp_y = generate_cmp_y(y_index)
+	current_cmp_y = generate_cmp(y_index)
 	# expect the hand receive here to be a LEFT HAND
 
 	four_fingers = current_list[:-5]
@@ -124,8 +130,8 @@ def arrange_prediction(preds, y_index=2, x_index=1):
 	elif type(preds) == np.ndarray:
 		preds = preds.tolist()
 
-	current_cmp_x = generate_cmp_x(x_index)
-	current_cmp_y = generate_cmp_y(y_index)
+	current_cmp_x = generate_cmp(x_index)
+	current_cmp_y = generate_cmp(y_index)
 
 	preds.sort(key=functools.cmp_to_key(current_cmp_y))
 	preds.sort(key=functools.cmp_to_key(current_cmp_x))
