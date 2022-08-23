@@ -1,6 +1,12 @@
 # RA_xray
 
 ## Getting Started
+Before running joint detection you need to get the pretrain model and paste it into yolov5 directory
+The pretrained model can be found here:
+
+https://drive.google.com/file/d/13rBP0qJJzz0greOffpirRqnkfeXS4Ut9/view?usp=sharing
+
+
 Run joint detection by using yolov5/detect.py with these arguments:
 ```angular2html
 python detect.py --source "data/RA_Jun2/*hand*" --weights joint_all_multi.pt --save-txt --conf-thres 0.35 --iou-thres 0.1
