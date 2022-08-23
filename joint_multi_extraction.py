@@ -7,8 +7,12 @@ import yaml
 from joint_postprocessing import generate_cmp
 
 image_dir = 'yolov5/data/RA_Jun2/'
+joints_feature_output_dir = 'yolov5/data/extracted_joint_RA_Jun2'
+
 labels_dir = 'yolov5/runs/detect/joint_all_multi/labels/'
 label_info = 'yolov5/data/joint_all_multi.yaml'
+
+os.makedirs(joints_feature_output_dir, exist_ok=True)
 
 
 def get_actual_coord(x, y, width, height, x_size, y_size):
@@ -27,7 +31,7 @@ def get_actual_coord(x, y, width, height, x_size, y_size):
 	return int(initial_x), int(initial_y), int(end_x), int(end_y)
 
 
-def save_extraction(selected_predictions, current_label, is_right_hand=False):
+def save_extraction(selected_predictions, current_label, image_name, is_right_hand=False):
 	hand_direction = 'right' if is_right_hand else 'left'
 
 	for idx_prediction, selected_prediction in enumerate(selected_predictions):
@@ -35,7 +39,8 @@ def save_extraction(selected_predictions, current_label, is_right_hand=False):
 		initial_x, initial_y, end_x, end_y = get_actual_coord(x, y, width, height, x_ratio, y_ratio)
 		cropped = image_array[initial_y:end_y, initial_x:end_x]
 
-		new_filename = image.replace('.tif', f'_{hand_direction}_{current_label}_{idx_prediction + 1}.tif')
+		new_image_name = image_name.replace(os.path.dirname(image_name), joints_feature_output_dir)
+		new_filename = new_image_name.replace('.tif', f'_{hand_direction}_{current_label}_{idx_prediction + 1}.tif')
 		cv2.imwrite(new_filename, cropped)
 
 
@@ -70,13 +75,12 @@ for image in all_images:
 			# reverse because the numbering will be from 1,2,3,4,5 for right hand and is inverse for left hand
 			left_hand = reversed(selected_predictions[:len(selected_predictions)//2])
 			right_hand = selected_predictions[len(selected_predictions)//2:]
-			save_extraction(left_hand, current_label, is_right_hand=False)
-			save_extraction(right_hand, current_label, is_right_hand=True)
-
+			save_extraction(left_hand, current_label, image, is_right_hand=False)
+			save_extraction(right_hand, current_label, image, is_right_hand=True)
 		elif 'hand' in image.lower() and 'left' in image.lower():
 			left_hand = reversed(selected_predictions)
-			save_extraction(left_hand, current_label, is_right_hand=False)
+			save_extraction(left_hand, current_label, image, is_right_hand=False)
 		elif 'hand' in image.lower() and 'right' in image.lower():
 			right_hand = selected_predictions
-			save_extraction(right_hand, current_label, is_right_hand=True)
+			save_extraction(right_hand, current_label, image, is_right_hand=True)
 
